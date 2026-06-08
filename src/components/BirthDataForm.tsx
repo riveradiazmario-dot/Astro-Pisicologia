@@ -72,6 +72,7 @@ export default function BirthDataForm({ onCalculate, initialData, loading }: Bir
       latitude: Number(latitude),
       longitude: Number(longitude),
       timezoneOffset: Number(timezoneOffset),
+      timezoneId: timezoneName || undefined,
       useManualCoords
     });
   };
