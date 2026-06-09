@@ -213,11 +213,11 @@ class AstroTherapyPDF {
     d.rect(0, heroY, W, 0.4, 'F');
 
     // ── Logo centrado ──────────────────────────────────────────────────────
-    // Logo 290×432 px, ratio 0.671 (portrait). LOGO_ASPECT = width/height.
-    const logoW = 26;
-    const logoH = logoW / LOGO_ASPECT;   // ≈ 38.7 mm
+    // Logo circular 220×220 px (LOGO_ASPECT = 1.0 → cuadrado).
+    const logoW = 28;
+    const logoH = logoW / LOGO_ASPECT;   // 28 mm × 28 mm
     const logoX = (W - logoW) / 2;
-    const logoY = heroY + 7;
+    const logoY = heroY + 6;
 
     try {
       d.addImage(`data:image/jpeg;base64,${LOGO_B64}`, 'JPEG', logoX, logoY, logoW, logoH);
