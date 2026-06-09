@@ -167,7 +167,7 @@ class AstroTherapyPDF {
     this.font('normal', 7.5);
     this.tc([155, 145, 200] as RGB);
     d.text(title, W / 2, 8.8, { align: 'center' });
-    d.text(`${page} / [TP]`, W - MX, 8.8, { align: 'right' });
+    d.text(`${page} / @TP@`, W - MX, 8.8, { align: 'right' });
 
     // Línea de pie de página
     this.divider(H - FTR + 1, C.divider, 0.2);
@@ -219,7 +219,9 @@ class AstroTherapyPDF {
     const logoX = (W - logoW) / 2;
     const logoY = heroY + 7;
 
-    d.addImage(LOGO_B64, 'JPEG', logoX, logoY, logoW, logoH);
+    try {
+      d.addImage(`data:image/jpeg;base64,${LOGO_B64}`, 'JPEG', logoX, logoY, logoW, logoH);
+    } catch (_e) { /* logo render failed — continue */ }
 
     // ── Título y subtítulo bajo el logo ────────────────────────────────────
     const titleY = logoY + logoH + 5;
@@ -832,7 +834,7 @@ class AstroTherapyPDF {
   // ─── Guardar: sustituye '[TP]' por el total real de páginas ──────────────
 
   save(filename: string): void {
-    this.doc.putTotalPages('[TP]');
+    this.doc.putTotalPages('@TP@');
     this.doc.save(filename);
   }
 }
