@@ -1,5 +1,5 @@
 /**
- * AstroAnima — Astrología Psicológica Arquetípica
+ * AstroTherapy Pro — Astrología Psicológica Arquetípica
  * Aplicación principal
  *
  * Herramienta simbólica de apoyo interpretativo para terapeutas,

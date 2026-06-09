@@ -23,7 +23,7 @@ export default function Sidebar({ currentView, onViewChange, consultantName }: S
       <div className="p-6 border-b border-border">
         <h1 className="text-2xl font-bold text-accent flex items-center gap-2">
           <span className="text-3xl">✦</span>
-          <span>AstroAnima</span>
+          <span>AstroTherapy Pro</span>
         </h1>
         <p className="text-xs text-text-muted mt-1">Astrología Psicológica</p>
       </div>

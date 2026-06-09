@@ -1,9 +1,17 @@
 /**
- * AstroTherapy Pro — Motor de Exportación PDF v2.0
- * Etapas 1–3: Portada · Tablas de datos · Carta natal
+ * AstroTherapy Pro — Motor de Exportación PDF v3.0 (Iteración Final)
+ *
+ * Partes implementadas:
+ *   1) Portada premium con logo (sin círculos decorativos)
+ *   2) Rueda natal al 82 % del ancho útil
+ *   3) Tabla de aspectos con etiquetas ASCII (CONJ/SEXT/CUAD/TRIG/OPOS)
+ *   4) Interpretación terapéutica completa (7 secciones)
+ *   5) Descargo de responsabilidad profesional
+ *   6) Branding AstroTherapy Pro en todo el documento
+ *   7) TypeScript limpio — putTotalPages('[TP]') para páginas dinámicas
  *
  * MÓDULOS CONGELADOS: engine.ts · ChartWheel.tsx · BirthDataForm.tsx
- * No modifica ningún cálculo astrológico.
+ * No modifica ningún cálculo astrológico ni fórmula matemática.
  */
 
 import jsPDF from 'jspdf';
@@ -11,6 +19,7 @@ import html2canvas from 'html2canvas';
 import type { NatalChart, TherapistConfig } from '../astronomy/types';
 import type { FullInterpretation } from '../interpretation-engine/interpreter';
 import { ASPECT_CONFIG } from '../astronomy/types';
+import { LOGO_B64, LOGO_ASPECT } from './logo-data';
 
 // ─── Tipos públicos ───────────────────────────────────────────────────────────
 
@@ -47,6 +56,15 @@ const ASPECT_COLOR: Record<string, RGB> = {
   square:      C.red,
   trine:       C.blue,
   opposition:  C.orange,
+};
+
+// Etiquetas ASCII — seguras en Windows y Mac con Helvetica
+const ASPECT_LABEL: Record<string, string> = {
+  conjunction: 'CONJ',
+  sextile:     'SEXT',
+  square:      'CUAD',
+  trine:       'TRIG',
+  opposition:  'OPOS',
 };
 
 // ─── Constantes de layout A4 (mm) ────────────────────────────────────────────
@@ -95,10 +113,15 @@ function todayStr(): string {
   });
 }
 
+/** Elimina marcadores de negrita Markdown (**texto**) */
+function stripBold(text: string): string {
+  return text.replace(/\*\*/g, '');
+}
+
 // ─── Clase constructora del PDF ───────────────────────────────────────────────
 
 class AstroTherapyPDF {
-  // jspdf is declared as ambient module (any) in declarations.d.ts
+  // jspdf se declara como módulo ambiguo (any) en declarations.d.ts
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private doc: any;
 
@@ -106,7 +129,7 @@ class AstroTherapyPDF {
     this.doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   }
 
-  // ── Color helpers ─────────────────────────────────────────────────────────
+  // ── Helpers de color ──────────────────────────────────────────────────────
 
   private tc(c: RGB): void { this.doc.setTextColor(c[0], c[1], c[2]); }
   private fc(c: RGB): void { this.doc.setFillColor(c[0], c[1], c[2]); }
@@ -123,16 +146,17 @@ class AstroTherapyPDF {
     this.doc.line(MX, y, W - MX, y);
   }
 
-  // ── Header + footer ───────────────────────────────────────────────────────
+  // ── Encabezado y pie de página
+  // Usa '[TP]' como placeholder; putTotalPages('[TP]') lo sustituye antes de guardar.
 
-  private decorate(title: string, page: number, total: number): void {
+  private decorate(title: string, page: number): void {
     const d = this.doc;
 
-    // Header band
+    // Banda de encabezado
     this.fc(C.brand);
     d.rect(0, 0, W, HDR, 'F');
 
-    // Accent strip
+    // Franja accent inferior del encabezado
     this.fc(C.accent);
     d.rect(0, HDR - 0.6, W, 0.6, 'F');
 
@@ -143,9 +167,9 @@ class AstroTherapyPDF {
     this.font('normal', 7.5);
     this.tc([155, 145, 200] as RGB);
     d.text(title, W / 2, 8.8, { align: 'center' });
-    d.text(`${page} / ${total}`, W - MX, 8.8, { align: 'right' });
+    d.text(`${page} / [TP]`, W - MX, 8.8, { align: 'right' });
 
-    // Footer line
+    // Línea de pie de página
     this.divider(H - FTR + 1, C.divider, 0.2);
 
     this.font('normal', 6.5);
@@ -159,7 +183,7 @@ class AstroTherapyPDF {
     d.setLineWidth(0.2);
   }
 
-  // ── Table row backgrounds ─────────────────────────────────────────────────
+  // ── Fondos de filas de tabla ───────────────────────────────────────────────
 
   private tableRow(y: number, rowH: number, alt: boolean, highlight = false): void {
     if (highlight) {
@@ -171,100 +195,106 @@ class AstroTherapyPDF {
     }
   }
 
-  // ─── PÁGINA 1: Portada ────────────────────────────────────────────────────
+  // ─── PARTE 1: Portada premium con logo ───────────────────────────────────
 
-  buildCover(chart: NatalChart, therapistConfig: TherapistConfig, total: number): void {
+  buildCover(chart: NatalChart, therapistConfig: TherapistConfig): void {
     const d = this.doc;
-    this.decorate('Informe de Carta Natal', 1, total);
+    this.decorate('Informe Astrológico Terapéutico', 1);
 
-    // Hero band
-    const heroH = 72;
+    // ── Banda hero ─────────────────────────────────────────────────────────
+    const heroH = 76;
     const heroY = HDR;
+
     this.fc(C.brandDark);
     d.rect(0, heroY, W, heroH, 'F');
 
-    // Decorative concentric circles
-    this.dc(C.accent);
-    d.setLineWidth(0.25);
-    d.circle(W / 2, heroY + heroH / 2, 26, 'S');
-    this.dc(C.brandMid);
-    d.setLineWidth(0.15);
-    d.circle(W / 2, heroY + heroH / 2, 20, 'S');
-    d.circle(W / 2, heroY + heroH / 2, 14, 'S');
+    // Línea accent superior de la banda
+    this.fc(C.accent);
+    d.rect(0, heroY, W, 0.4, 'F');
 
-    // Cross lines
-    d.setLineWidth(0.1);
-    const cx = W / 2;
-    const cy = heroY + heroH / 2;
-    d.line(cx - 26, cy, cx + 26, cy);
-    d.line(cx, cy - 26, cx, cy + 26);
+    // ── Logo centrado ──────────────────────────────────────────────────────
+    // Logo 290×432 px, ratio 0.671 (portrait). LOGO_ASPECT = width/height.
+    const logoW = 26;
+    const logoH = logoW / LOGO_ASPECT;   // ≈ 38.7 mm
+    const logoX = (W - logoW) / 2;
+    const logoY = heroY + 7;
 
-    // Title
-    this.font('bold', 24);
+    d.addImage(LOGO_B64, 'JPEG', logoX, logoY, logoW, logoH);
+
+    // ── Título y subtítulo bajo el logo ────────────────────────────────────
+    const titleY = logoY + logoH + 5;
+
+    this.font('bold', 17);
     this.tc(C.accentLight);
-    d.text('AstroTherapy Pro', W / 2, heroY + 16, { align: 'center' });
-
-    this.font('normal', 9.5);
-    this.tc([160, 145, 215] as RGB);
-    d.text('Astrología Psicológica Arquetípica', W / 2, heroY + 24, { align: 'center' });
-
-    this.font('bold', 14);
-    this.tc([232, 224, 255] as RGB);
-    d.text('Informe de Carta Natal', W / 2, heroY + 50, { align: 'center' });
+    d.text('ASTROTHERAPY PRO', W / 2, titleY, { align: 'center' });
 
     this.font('normal', 8.5);
-    this.tc([148, 135, 200] as RGB);
-    d.text('Sistema Placidus  ·  Aspectos Mayores', W / 2, heroY + 58, { align: 'center' });
+    this.tc([160, 145, 215] as RGB);
+    d.text('Informe Astrológico Terapéutico', W / 2, titleY + 6.5, { align: 'center' });
 
-    // Consultant name
-    let y = heroY + heroH + 16;
+    // Línea accent inferior de la banda
+    this.fc(C.accent);
+    d.rect(0, heroY + heroH - 0.4, W, 0.4, 'F');
 
-    this.font('bold', 20);
+    // ── Nombre del consultante ─────────────────────────────────────────────
+    let y = heroY + heroH + 13;
+
+    this.font('bold', 21);
     this.tc(C.textDark);
     d.text(chart.birthData.name, W / 2, y, { align: 'center' });
-    y += 9;
+    y += 5;
+
+    this.font('normal', 8);
+    this.tc(C.textMid);
+    d.text('Consultante', W / 2, y, { align: 'center' });
+    y += 10;
 
     this.divider(y, C.divider, 0.3);
-    y += 8;
+    y += 10;
 
-    // Data grid — 2 columns
-    const COL_L = MX + 8;
-    const COL_R = W / 2 + 6;
-    const LBL_SZ = 7.5;
-    const VAL_SZ = 11;
-    const ROW_GAP = 10;
+    // ── Cuadrícula de datos ────────────────────────────────────────────────
+    const COL_L   = MX + 8;
+    const COL_R   = W / 2 + 8;
+    const LBL_SZ  = 7;
+    const VAL_SZ  = 10;
+    const ROW_GAP = 11;
 
     const rawCity = chart.birthData.city ?? '';
-    const cityVal = rawCity.length > 26 ? rawCity.slice(0, 26) + '…' : rawCity;
+    const cityVal = rawCity.length > 28 ? rawCity.slice(0, 28) + '…' : rawCity;
 
-    const grid: Array<[string, string, string, string]> = [
-      ['FECHA DE NACIMIENTO', fmtDate(chart.birthData.date),
-       'HORA LOCAL', chart.birthData.time],
-      ['LUGAR DE NACIMIENTO', cityVal,
-       'COORDENADAS',
-       `${chart.birthData.latitude.toFixed(3)}°, ${chart.birthData.longitude.toFixed(3)}°`],
-    ];
+    // Fila 1: Fecha + Hora
+    this.font('bold', LBL_SZ);
+    this.tc(C.textLight);
+    d.text('FECHA DE NACIMIENTO', COL_L, y);
+    d.text('HORA LOCAL', COL_R, y);
+    y += 4;
+    this.font('normal', VAL_SZ);
+    this.tc(C.textDark);
+    d.text(fmtDate(chart.birthData.date), COL_L, y);
+    d.text(chart.birthData.time, COL_R, y);
+    y += ROW_GAP;
 
-    for (const [lbl1, val1, lbl2, val2] of grid) {
-      this.font('bold', LBL_SZ);
-      this.tc(C.textLight);
-      d.text(lbl1, COL_L, y);
-      d.text(lbl2, COL_R, y);
-      y += 4.5;
-      this.font('normal', VAL_SZ);
-      this.tc(C.textDark);
-      d.text(val1, COL_L, y);
-      d.text(val2, COL_R, y);
-      y += ROW_GAP;
-    }
+    // Fila 2: Lugar + Coordenadas
+    this.font('bold', LBL_SZ);
+    this.tc(C.textLight);
+    d.text('LUGAR DE NACIMIENTO', COL_L, y);
+    d.text('COORDENADAS', COL_R, y);
+    y += 4;
+    this.font('normal', VAL_SZ);
+    this.tc(C.textDark);
+    d.text(cityVal, COL_L, y);
+    d.text(
+      `${chart.birthData.latitude.toFixed(3)}°, ${chart.birthData.longitude.toFixed(3)}°`,
+      COL_R, y,
+    );
+    y += ROW_GAP;
 
-    // ASC / MC
+    // Fila 3: ASC + MC (con color accent)
     this.font('bold', LBL_SZ);
     this.tc(C.textLight);
     d.text('ASCENDENTE', COL_L, y);
     d.text('MEDIO CIELO', COL_R, y);
-    y += 4.5;
-
+    y += 4;
     this.font('bold', VAL_SZ);
     this.tc(C.accent);
     d.text(fmtLonFull(chart.houses.ascendant), COL_L, y);
@@ -272,13 +302,13 @@ class AstroTherapyPDF {
     y += ROW_GAP + 2;
 
     this.divider(y, C.divider, 0.3);
-    y += 9;
+    y += 10;
 
-    // Emission date
+    // ── Datos de emisión ───────────────────────────────────────────────────
     this.font('normal', 8.5);
     this.tc(C.textMid);
     d.text(`Fecha de emisión: ${todayStr()}`, W / 2, y, { align: 'center' });
-    y += 6;
+    y += 7;
 
     if (therapistConfig.name) {
       const reg = therapistConfig.registration
@@ -287,26 +317,21 @@ class AstroTherapyPDF {
         `Elaborado por: ${therapistConfig.name}${reg}`,
         W / 2, y, { align: 'center' },
       );
+      y += 7;
     }
 
-    // Ethical disclaimer near footer
-    const discY = H - FTR - 22;
-    this.divider(discY - 2, [210, 205, 230] as RGB, 0.2);
-    this.font('italic', 7);
+    // Metodología
+    this.font('normal', 7.5);
     this.tc(C.textLight);
-    const disc =
-      'Este informe tiene fines terapéuticos y de autoconocimiento. ' +
-      'No constituye diagnóstico médico, psicológico ni pronóstico de ningún tipo.';
-    const discLines = d.splitTextToSize(disc, W - MX * 2 - 10) as string[];
-    d.text(discLines, W / 2, discY + 4, { align: 'center' });
+    d.text('Sistema Placidus  ·  Aspectos Mayores', W / 2, y, { align: 'center' });
   }
 
-  // ─── PÁGINA 2: Tablas de datos ────────────────────────────────────────────
+  // ─── PARTE 2a: Tablas de datos natales ────────────────────────────────────
 
-  buildDataTables(chart: NatalChart, total: number): void {
+  buildDataTables(chart: NatalChart): void {
     const d = this.doc;
     d.addPage();
-    this.decorate('Datos Natales  ·  Posiciones y Casas', 2, total);
+    this.decorate('Datos Natales  ·  Posiciones y Casas', 2);
 
     let y = CT + 2;
     const rowH = 5.8;
@@ -319,10 +344,9 @@ class AstroTherapyPDF {
     this.divider(y, C.accent, 0.4);
     y += 5;
 
-    // Column positions
     const PC = { name: MX + 1, sign: MX + 27, pos: MX + 66, house: MX + 108, retro: MX + 128 };
 
-    // Header row
+    // Encabezado de tabla
     this.fc(C.tblHdr);
     d.rect(MX, y - rowH + 1, W - MX * 2, rowH, 'F');
 
@@ -359,7 +383,7 @@ class AstroTherapyPDF {
       y += rowH;
     });
 
-    // ASC / MC rows
+    // Filas ASC / MC
     [
       { label: 'Ascendente (ASC)', lon: chart.houses.ascendant },
       { label: 'Medio Cielo (MC)', lon: chart.houses.midheaven },
@@ -384,12 +408,10 @@ class AstroTherapyPDF {
     this.divider(y, C.accent, 0.4);
     y += 5;
 
-    // Two-column layout
     const half = (W - MX * 2) / 2 - 3;
     const CC_L = { num: MX + 1, pos: MX + 12 };
     const CC_R = { num: MX + half + 7, pos: MX + half + 18 };
 
-    // Headers
     this.fc(C.tblHdr);
     d.rect(MX,            y - rowH + 1, half, rowH, 'F');
     d.rect(MX + half + 6, y - rowH + 1, half, rowH, 'F');
@@ -442,12 +464,12 @@ class AstroTherapyPDF {
     this.divider(y, C.divider);
   }
 
-  // ─── PÁGINA 3: Carta natal (html2canvas) ─────────────────────────────────
+  // ─── PARTE 2b: Carta natal — 82 % del ancho útil ─────────────────────────
 
-  async buildChartWheel(scale: number, total: number): Promise<void> {
+  async buildChartWheel(scale: number, page: number): Promise<void> {
     const d = this.doc;
     d.addPage();
-    this.decorate('Carta Natal', 3, total);
+    this.decorate('Carta Natal', page);
 
     const element = document.getElementById('chart-wheel');
     if (!element) {
@@ -479,8 +501,8 @@ class AstroTherapyPDF {
       : canvas.toDataURL('image/jpeg', 0.93);
 
     const availW = W - MX * 2;
-    const availH = CB - CT - 14;
-    const side   = Math.min(availW, availH);
+    // Parte 2: 82 % del ancho útil (no limitado por alto)
+    const side   = availW * 0.82;
     const imgX   = (W - side) / 2;
     const imgY   = CT + 4;
 
@@ -499,13 +521,12 @@ class AstroTherapyPDF {
     );
   }
 
-  // ─── PÁGINA 4: Tabla de aspectos ─────────────────────────────────────────
+  // ─── PARTE 3: Tabla de aspectos con etiquetas ASCII ──────────────────────
 
-  buildAspects(chart: NatalChart, pageStart: number, total: number): void {
+  buildAspects(chart: NatalChart, page: number): number {
     const d = this.doc;
     d.addPage();
-    let page = pageStart;
-    this.decorate('Tabla de Aspectos', page, total);
+    this.decorate('Tabla de Aspectos', page);
 
     let y = CT + 2;
     const rowH = 5.8;
@@ -521,28 +542,29 @@ class AstroTherapyPDF {
       this.font('italic', 9);
       this.tc(C.textMid);
       d.text('No se encontraron aspectos significativos.', MX, y);
-      return;
+      return page;
     }
 
-    const AC = { p1: MX + 1, asp: MX + 38, sym: MX + 74, p2: MX + 84, orb: MX + 124 };
+    // Columnas: PLANETA 1 | ASPECTO | TIPO | PLANETA 2 | ORBE
+    const AC = { p1: MX + 1, asp: MX + 40, label: MX + 80, p2: MX + 98, orb: MX + 144 };
 
     this.fc(C.tblHdr);
     d.rect(MX, y - rowH + 1, W - MX * 2, rowH, 'F');
 
     this.font('bold', 7.5);
     this.tc(C.tblHdrTxt);
-    d.text('PLANETA 1', AC.p1,  y);
-    d.text('ASPECTO',   AC.asp, y);
-    d.text('SÍM',       AC.sym, y);
-    d.text('PLANETA 2', AC.p2,  y);
-    d.text('ORBE',      AC.orb, y);
+    d.text('PLANETA 1', AC.p1,    y);
+    d.text('ASPECTO',   AC.asp,   y);
+    d.text('TIPO',      AC.label, y);
+    d.text('PLANETA 2', AC.p2,    y);
+    d.text('ORBE',      AC.orb,   y);
     y += rowH;
 
     chart.aspects.forEach((asp, i) => {
       if (y > CB - 8) {
         d.addPage();
         page++;
-        this.decorate('Aspectos (cont.)', page, total);
+        this.decorate('Aspectos (cont.)', page);
         y = CT + 2;
       }
 
@@ -550,6 +572,8 @@ class AstroTherapyPDF {
 
       const cfg      = ASPECT_CONFIG[asp.type as keyof typeof ASPECT_CONFIG];
       const aspColor = ASPECT_COLOR[asp.type] ?? C.textMid;
+      // Etiqueta ASCII — segura en todas las plataformas
+      const aspLabel = ASPECT_LABEL[asp.type] ?? asp.type.toUpperCase().slice(0, 4);
 
       this.font('bold', 8);
       this.tc(C.textDark);
@@ -558,7 +582,10 @@ class AstroTherapyPDF {
       this.font('normal', 8);
       this.tc(aspColor);
       d.text(cfg?.name ?? asp.type, AC.asp, y);
-      d.text(cfg?.symbol ?? '', AC.sym, y);
+
+      this.font('bold', 7.5);
+      this.tc(aspColor);
+      d.text(aspLabel, AC.label, y);
 
       this.font('bold', 8);
       this.tc(C.textDark);
@@ -574,33 +601,238 @@ class AstroTherapyPDF {
     this.divider(y, C.divider);
     y += 9;
 
-    // Leyenda
+    // Leyenda con etiquetas ASCII
     this.font('bold', 7.5);
     this.tc(C.textMid);
     d.text('Leyenda:', MX, y);
     y += 5;
 
-    const legend: Array<{ label: string; color: RGB }> = [
-      { label: 'Conjunción (0°)',  color: C.gold   },
-      { label: 'Sextil (60°)',     color: C.green  },
-      { label: 'Cuadratura (90°)', color: C.red    },
-      { label: 'Trígono (120°)',   color: C.blue   },
-      { label: 'Oposición (180°)', color: C.orange },
+    const legend: Array<{ name: string; abbr: string; angle: string; color: RGB }> = [
+      { name: 'Conjunción',  abbr: 'CONJ', angle: '0°',   color: C.gold   },
+      { name: 'Sextil',      abbr: 'SEXT', angle: '60°',  color: C.green  },
+      { name: 'Cuadratura',  abbr: 'CUAD', angle: '90°',  color: C.red    },
+      { name: 'Trígono',     abbr: 'TRIG', angle: '120°', color: C.blue   },
+      { name: 'Oposición',   abbr: 'OPOS', angle: '180°', color: C.orange },
     ];
 
     const itemW = (W - MX * 2) / legend.length;
     legend.forEach((item, i) => {
+      const lx = MX + i * itemW;
       this.fc(item.color);
-      d.rect(MX + i * itemW, y - 2.5, 3, 3, 'F');
-      this.font('normal', 7);
+      d.rect(lx, y - 2.5, 3, 3, 'F');
+      this.font('bold', 6.5);
+      this.tc(item.color);
+      d.text(item.abbr, lx + 4.5, y);
+      this.font('normal', 6);
       this.tc(C.textMid);
-      d.text(item.label, MX + i * itemW + 5, y);
+      d.text(`${item.name} (${item.angle})`, lx + 4.5, y + 3.5);
     });
+
+    return page;
   }
 
-  // ─── Guardar ──────────────────────────────────────────────────────────────
+  // ─── PARTE 4: Interpretación terapéutica (7 secciones) ───────────────────
+
+  buildInterpretation(interpretation: FullInterpretation, startPage: number): number {
+    const d = this.doc;
+
+    const sections = [
+      interpretation.mainTraits,
+      interpretation.emotionalNeeds,
+      interpretation.emotionalWounds,
+      interpretation.unconsciousFears,
+      interpretation.relationalDynamics,
+      interpretation.repetitivePatterns,
+      interpretation.strengths,
+    ];
+
+    let page = startPage;
+    d.addPage();
+    this.decorate('Interpretación Terapéutica', page);
+    let y = CT + 2;
+
+    // Encabezado de la sección
+    this.font('bold', 13);
+    this.tc(C.accent);
+    d.text('Interpretación Terapéutica', MX, y);
+    y += 4;
+    this.divider(y, C.accent, 0.4);
+    y += 5;
+
+    this.font('italic', 8.5);
+    this.tc(C.textMid);
+    const intro =
+      'El siguiente análisis integra los elementos de la carta natal desde una perspectiva ' +
+      'psicológica arquetípica, orientada al autoconocimiento y el crecimiento personal.';
+    const introLines = d.splitTextToSize(intro, W - MX * 2) as string[];
+    d.text(introLines, MX, y);
+    y += introLines.length * 4.5 + 8;
+
+    for (const section of sections) {
+      // Si no queda espacio para el encabezado + al menos una línea, nueva página
+      if (y > CB - 32) {
+        d.addPage();
+        page++;
+        this.decorate('Interpretación (cont.)', page);
+        y = CT + 4;
+      }
+
+      // ── Banda de encabezado de sección ──────────────────────────────────
+      this.fc(C.brand);
+      d.rect(MX, y - 4.5, W - MX * 2, 9, 'F');
+
+      // Línea accent inferior
+      this.fc(C.accent);
+      d.rect(MX, y + 4.5, W - MX * 2, 0.35, 'F');
+
+      this.font('bold', 10);
+      this.tc(C.accentLight);
+      d.text(section.title, MX + 4, y + 0.5);
+
+      // Indicador de intensidad (puntos: rellenos hasta section.intensity)
+      const dotsX   = W - MX - 4 - 9 * 3.5;
+      const intensity = Math.min(10, Math.max(1, section.intensity));
+      for (let k = 0; k < 10; k++) {
+        this.fc(k < intensity ? C.accent : C.brandMid);
+        d.circle(dotsX + k * 3.5, y - 0.8, 1, 'F');
+      }
+
+      y += 12;
+
+      // ── Párrafos de contenido ────────────────────────────────────────────
+      for (const paragraph of section.content) {
+        const clean = stripBold(paragraph);
+        const lines = d.splitTextToSize(clean, W - MX * 2) as string[];
+
+        for (const line of lines) {
+          if (y > CB - 6) {
+            d.addPage();
+            page++;
+            this.decorate('Interpretación (cont.)', page);
+            y = CT + 4;
+          }
+          this.font('normal', 8.5);
+          this.tc(C.textDark);
+          d.text(line, MX, y);
+          y += 4.5;
+        }
+
+        y += 2.5; // espacio entre párrafos
+      }
+
+      y += 9; // espacio entre secciones
+    }
+
+    return page;
+  }
+
+  // ─── PARTE 5: Descargo de responsabilidad ────────────────────────────────
+
+  buildDisclaimer(therapistConfig: TherapistConfig, page: number): void {
+    const d = this.doc;
+    d.addPage();
+    this.decorate('Aviso Legal y Ético', page);
+
+    let y = CT + 10;
+
+    // Título
+    this.font('bold', 15);
+    this.tc(C.accent);
+    d.text('Aviso y Descargo de Responsabilidad', W / 2, y, { align: 'center' });
+    y += 7;
+    this.divider(y, C.accent, 0.4);
+    y += 12;
+
+    const paragraphs: Array<{ title: string; body: string }> = [
+      {
+        title: 'Naturaleza del Informe',
+        body:
+          'Este informe astrológico ha sido elaborado con fines exclusivamente terapéuticos, ' +
+          'reflexivos y de autoconocimiento. La astrología psicológica arquetípica es una herramienta ' +
+          'simbólica que facilita la comprensión de patrones emocionales, relacionales y existenciales ' +
+          'desde una perspectiva integradora y humanista.',
+      },
+      {
+        title: 'Limitaciones y Alcance',
+        body:
+          'El contenido de este informe no constituye, bajo ninguna circunstancia, un diagnóstico ' +
+          'médico, psiquiátrico, psicológico ni pronóstico de ningún tipo. Los elementos presentados ' +
+          'deben interpretarse como invitaciones a la reflexión y no como afirmaciones absolutas sobre ' +
+          'la personalidad, el comportamiento o el destino del consultante.',
+      },
+      {
+        title: 'Responsabilidad Profesional',
+        body:
+          'El profesional que emite este informe actúa en el marco de un acompañamiento holístico y ' +
+          'simbólico. Se recomienda complementar este trabajo con la atención de profesionales de la ' +
+          'salud mental debidamente certificados cuando se identifiquen situaciones que requieran ' +
+          'intervención clínica especializada.',
+      },
+      {
+        title: 'Confidencialidad',
+        body:
+          'La información contenida en este informe es de carácter estrictamente confidencial y ha ' +
+          'sido elaborada exclusivamente para el consultante al que se dirige. Queda prohibida su ' +
+          'reproducción, distribución o uso sin el consentimiento expreso del profesional emisor y ' +
+          'del consultante.',
+      },
+      {
+        title: 'Consentimiento Informado',
+        body:
+          'La recepción de este informe implica la aceptación de las condiciones aquí descritas. ' +
+          'El consultante reconoce haber sido informado del carácter simbólico e interpretativo de ' +
+          'la astrología psicológica y de las limitaciones del presente documento.',
+      },
+    ];
+
+    for (const para of paragraphs) {
+      if (y > CB - 32) break; // guardia de seguridad
+
+      this.font('bold', 9.5);
+      this.tc(C.accent);
+      d.text(para.title, MX, y);
+      y += 5;
+
+      const lines = d.splitTextToSize(para.body, W - MX * 2) as string[];
+      this.font('normal', 8.5);
+      this.tc(C.textDark);
+      d.text(lines, MX, y);
+      y += lines.length * 4.5 + 9;
+    }
+
+    // Bloque de firma (cerca del final de la página)
+    const sigY = Math.max(y + 8, CB - 38);
+
+    this.divider(sigY, C.divider, 0.2);
+    let sy = sigY + 9;
+
+    this.font('normal', 8);
+    this.tc(C.textMid);
+    d.text(`Fecha de emisión: ${todayStr()}`, MX, sy);
+    sy += 6;
+
+    if (therapistConfig.name) {
+      const reg = therapistConfig.registration
+        ? `  ·  Reg. ${therapistConfig.registration}` : '';
+      d.text(
+        `Profesional: ${therapistConfig.name}${reg}`,
+        MX, sy,
+      );
+    }
+
+    // Atribución final
+    this.font('italic', 7);
+    this.tc(C.textLight);
+    d.text(
+      'Informe generado con AstroTherapy Pro  ·  Astrología Psicológica Arquetípica',
+      W / 2, CB - 4, { align: 'center' },
+    );
+  }
+
+  // ─── Guardar: sustituye '[TP]' por el total real de páginas ──────────────
 
   save(filename: string): void {
+    this.doc.putTotalPages('[TP]');
     this.doc.save(filename);
   }
 }
@@ -609,27 +841,38 @@ class AstroTherapyPDF {
 
 /**
  * Genera y descarga el PDF profesional AstroTherapy Pro.
- * Etapas 1–3 implementadas; interpretación (Etapa 4) pendiente de autorización.
  *
  * @param chart            Carta natal calculada
- * @param _interpretation  Reservado para Etapa 4 (no usado aún)
+ * @param interpretation   Interpretación terapéutica completa (7 secciones)
  * @param therapistConfig  Configuración del terapeuta
  * @param quality          NORMAL (scale 2) · HIGH (scale 3, default)
  */
 export async function generatePDF(
   chart: NatalChart,
-  _interpretation: FullInterpretation,
+  interpretation: FullInterpretation,
   therapistConfig: TherapistConfig,
   quality: ExportQuality = 'HIGH',
 ): Promise<void> {
   const scale   = quality === 'HIGH' ? 3 : 2;
-  const TOTAL   = 4;
   const builder = new AstroTherapyPDF();
 
-  builder.buildCover(chart, therapistConfig, TOTAL);
-  builder.buildDataTables(chart, TOTAL);
-  await builder.buildChartWheel(scale, TOTAL);
-  builder.buildAspects(chart, 4, TOTAL);
+  // Página 1: Portada premium con logo
+  builder.buildCover(chart, therapistConfig);
+
+  // Página 2: Tablas de datos natales
+  builder.buildDataTables(chart);
+
+  // Página 3: Carta natal al 82 % del ancho
+  await builder.buildChartWheel(scale, 3);
+
+  // Página 4+: Tabla de aspectos (retorna última página usada)
+  let page = builder.buildAspects(chart, 4);
+
+  // Siguientes páginas: Interpretación terapéutica (7 secciones)
+  page = builder.buildInterpretation(interpretation, page + 1);
+
+  // Última página: Descargo de responsabilidad
+  builder.buildDisclaimer(therapistConfig, page + 1);
 
   const safe     = chart.birthData.name
     .replace(/\s+/g, '_')
