@@ -13,7 +13,7 @@ export default function WelcomeScreen({ onNewChart, onOpenConsultants, onConfig,
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] py-12">
       {/* Hero */}
       <div className="flex flex-col items-center mb-10">
-        <AstroTherapyLogo size={90} className="mb-4" />
+        <AstroTherapyLogo size={122} className="mb-4" />
         <h1 className="text-2xl font-bold text-text-primary tracking-tight mb-1">
           ASTROTHERAPY <span className="text-accent">PRO</span>
         </h1>

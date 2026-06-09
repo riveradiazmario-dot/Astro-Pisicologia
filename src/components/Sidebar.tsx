@@ -24,7 +24,7 @@ export default function Sidebar({ currentView, onViewChange, consultantName }: S
       {/* Brand header */}
       <div className="px-5 pt-6 pb-5">
         <div className="flex items-center gap-3 mb-1">
-          <AstroTherapyLogo size={38} />
+          <AstroTherapyLogo size={46} />
           <div className="min-w-0">
             <p className="text-[11px] font-bold tracking-[0.15em] text-accent uppercase leading-none">
               AstroTherapy
