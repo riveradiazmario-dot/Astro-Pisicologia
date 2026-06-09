@@ -1,11 +1,12 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @theme {
-  --color-primary-50: #f5f0ff;
-  --color-primary-100: #ede5ff;
-  --color-primary-200: #ddd0ff;
-  --color-primary-300: #c4adff;
-  --color-primary-400: #a67fff;
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
   --color-primary-500: #8b5cf6;
   --color-primary-600: #7c3aed;
   --color-primary-700: #6d28d9;
@@ -13,16 +14,17 @@
   --color-primary-900: #4c1d95;
   --color-primary-950: #2e1065;
 
-  --color-surface: #0f0a1a;
-  --color-surface-light: #1a1229;
-  --color-surface-lighter: #241a38;
-  --color-surface-card: #1e1530;
-  --color-accent: #c084fc;
-  --color-accent-warm: #f59e0b;
-  --color-text-primary: #f0e6ff;
-  --color-text-secondary: #a78bcc;
-  --color-text-muted: #6b5a80;
-  --color-border: #3d2b5a;
+  /* Slate-dark professional palette — ASTROTHERAPY PRO */
+  --color-surface: #0F172A;
+  --color-surface-light: #111827;
+  --color-surface-lighter: #1E293B;
+  --color-surface-card: #1E293B;
+  --color-accent: #A78BFA;
+  --color-accent-warm: #F59E0B;
+  --color-text-primary: #E5E7EB;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #64748B;
+  --color-border: #334155;
 }
 
 html, body, #root {
@@ -34,25 +36,32 @@ body {
   background-color: var(--color-surface);
   color: var(--color-text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-surface-light);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--color-border);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary-600);
+  background: var(--color-primary-700);
 }
 
 /* Markdown-like bold in interpretations */
 .interpretation-text strong {
   color: var(--color-accent);
   font-weight: 600;
+}
+
+/* Input date/time color fix for dark backgrounds */
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark;
 }

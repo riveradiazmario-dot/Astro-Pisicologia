@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, CheckCircle } from 'lucide-react';
 import type { TherapistConfig } from '../astronomy/types';
 import { getTherapistConfig, saveTherapistConfig } from '../storage/db';
+
+const inputClass = [
+  'w-full bg-surface border border-border rounded-lg px-4 py-2.5',
+  'text-sm text-text-primary placeholder-text-muted',
+  'focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/50',
+  'hover:border-border/80 transition-all duration-150',
+].join(' ');
+
+const labelClass = 'block text-xs font-medium text-text-muted uppercase tracking-wide mb-1.5';
 
 export default function ConfigView() {
   const [config, setConfig] = useState<TherapistConfig>({
@@ -23,21 +32,20 @@ export default function ConfigView() {
     await saveTherapistConfig(config);
     setSaving(false);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => setSaved(false), 2500);
   };
-
-  const inputClass = 'w-full bg-surface border border-border rounded-lg px-4 py-2.5 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition';
-  const labelClass = 'block text-sm font-medium text-text-secondary mb-1.5';
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">Configuración</h1>
-        <p className="text-sm text-text-muted mt-1">Datos del profesional para informes PDF.</p>
+        <h1 className="text-xl font-semibold text-text-primary">Configuración</h1>
+        <p className="text-sm text-text-muted mt-1">Datos del profesional para informes y exportaciones PDF.</p>
       </div>
 
-      <div className="bg-surface-card border border-border rounded-xl p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-accent mb-4">Datos del Profesional</h2>
+      <div className="bg-surface-card border border-border rounded-2xl p-6 space-y-5">
+        <h2 className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-1">
+          Datos del Profesional
+        </h2>
 
         <div>
           <label className={labelClass}>Nombre completo</label>
@@ -83,25 +91,42 @@ export default function ConfigView() {
         </div>
 
         <div>
-          <label className={labelClass}>Orbe por defecto para aspectos (grados)</label>
-          <input
-            type="number"
-            min={1}
-            max={15}
-            value={config.orbDefault}
-            onChange={e => setConfig(c => ({ ...c, orbDefault: Number(e.target.value) }))}
-            className={inputClass}
-          />
+          <label className={labelClass}>
+            Orbe por defecto para aspectos
+            <span className="ml-1 normal-case text-text-muted">(grados)</span>
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={1}
+              max={15}
+              value={config.orbDefault}
+              onChange={e => setConfig(c => ({ ...c, orbDefault: Number(e.target.value) }))}
+              className="flex-1 accent-accent"
+            />
+            <span className="text-sm font-mono text-accent w-6 text-center">{config.orbDefault}°</span>
+          </div>
         </div>
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-6 py-2.5 bg-primary-600 hover:bg-primary-500 disabled:bg-surface-lighter text-white font-semibold rounded-lg transition"
-        >
-          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          {saved ? '¡Guardado!' : 'Guardar configuración'}
-        </button>
+        <div className="pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 ${
+              saved
+                ? 'bg-emerald-800/40 text-emerald-400 border border-emerald-700/30'
+                : 'bg-accent hover:bg-primary-400 text-surface disabled:opacity-50'
+            }`}
+          >
+            {saving ? (
+              <><Loader2 size={15} className="animate-spin" /><span>Guardando…</span></>
+            ) : saved ? (
+              <><CheckCircle size={15} /><span>Guardado</span></>
+            ) : (
+              <><Save size={15} /><span>Guardar configuración</span></>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

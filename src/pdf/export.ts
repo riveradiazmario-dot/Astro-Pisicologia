@@ -315,8 +315,10 @@ class AstroTherapyPDF {
     if (therapistConfig.name) {
       const reg = therapistConfig.registration
         ? `  ·  Reg. ${therapistConfig.registration}` : '';
+      this.font('normal', 9);
+      this.tc(C.textDark);
       d.text(
-        `Elaborado por: ${therapistConfig.name}${reg}`,
+        `Emitido por: ${therapistConfig.name}${reg}`,
         W / 2, y, { align: 'center' },
       );
       y += 7;

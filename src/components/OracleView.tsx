@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Send } from 'lucide-react';
+import { Sparkles, Send, RotateCcw } from 'lucide-react';
 import type { NatalChart } from '../astronomy/types';
 import { queryOracle, type OracleResponse } from '../interpretation-engine/interpreter';
 
@@ -26,7 +26,6 @@ export default function OracleView({ chart }: OracleViewProps) {
   const handleQuery = (q: string) => {
     const queryText = q || question;
     if (!queryText.trim()) return;
-
     const result = queryOracle(chart, queryText);
     setResponse(result);
     setHistory(prev => [result, ...prev]);
@@ -34,53 +33,50 @@ export default function OracleView({ chart }: OracleViewProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-2xl mx-auto space-y-5">
+
       {/* Header */}
-      <div className="bg-surface-card border border-border rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-accent flex items-center gap-2 mb-2">
-          <Sparkles size={20} />
-          Oráculo Simbólico
-        </h2>
-        <p className="text-sm text-text-muted">
+      <div className="bg-surface-card border border-border rounded-2xl p-5">
+        <div className="flex items-center gap-2 mb-1.5">
+          <Sparkles size={16} className="text-accent" />
+          <h2 className="text-sm font-semibold text-text-primary">Oráculo Simbólico</h2>
+        </div>
+        <p className="text-xs text-text-muted leading-relaxed">
           Escribe una pregunta sobre un tema emocional y el oráculo buscará correspondencias
-          en la carta natal del consultante. Este sistema funciona completamente local,
-          sin inteligencia artificial externa.
+          en la carta natal. Sistema local, sin IA externa.
         </p>
       </div>
 
-      {/* Question input */}
-      <div className="bg-surface-card border border-border rounded-xl p-6">
-        <div className="flex gap-3">
+      {/* Input */}
+      <div className="bg-surface-card border border-border rounded-2xl p-5">
+        <div className="flex gap-2.5">
           <input
             type="text"
             value={question}
             onChange={e => setQuestion(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleQuery(question)}
-            placeholder="Escribe tu pregunta..."
-            className="flex-1 bg-surface border border-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 transition"
+            placeholder="Escribe tu pregunta…"
+            className="flex-1 bg-surface border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/50 transition"
           />
           <button
             onClick={() => handleQuery(question)}
             disabled={!question.trim()}
-            className="px-4 py-3 bg-primary-600 hover:bg-primary-500 disabled:bg-surface-lighter disabled:text-text-muted text-white rounded-lg transition flex items-center gap-2"
+            className="px-4 py-2.5 bg-accent hover:bg-primary-400 disabled:opacity-40 text-surface rounded-lg transition flex items-center gap-2 text-sm font-medium"
           >
-            <Send size={16} />
+            <Send size={14} />
             <span className="hidden sm:inline">Consultar</span>
           </button>
         </div>
 
         {/* Suggested questions */}
         <div className="mt-4">
-          <p className="text-xs text-text-muted mb-2">Preguntas sugeridas:</p>
-          <div className="flex flex-wrap gap-2">
+          <p className="text-[11px] text-text-muted mb-2 uppercase tracking-wide">Sugerencias</p>
+          <div className="flex flex-wrap gap-1.5">
             {SUGGESTED_QUESTIONS.map((q, i) => (
               <button
                 key={i}
-                onClick={() => {
-                  setQuestion(q);
-                  handleQuery(q);
-                }}
-                className="text-xs bg-surface hover:bg-surface-lighter text-text-secondary hover:text-text-primary border border-border rounded-full px-3 py-1.5 transition"
+                onClick={() => { setQuestion(q); handleQuery(q); }}
+                className="text-[11px] bg-surface hover:bg-surface-lighter text-text-muted hover:text-text-secondary border border-border/60 rounded-full px-3 py-1 transition"
               >
                 {q}
               </button>
@@ -91,21 +87,26 @@ export default function OracleView({ chart }: OracleViewProps) {
 
       {/* Response */}
       {response && (
-        <div className="bg-surface-card border border-primary-700/30 rounded-xl p-6 space-y-4">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">✦</span>
-            <div>
-              <p className="text-sm text-text-muted italic mb-1">Pregunta: "{response.query}"</p>
+        <div className="bg-surface-card border border-accent/20 rounded-2xl p-5 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] text-text-muted italic truncate">"{response.query}"</p>
               {response.matchedThemes.length > 0 && (
-                <div className="flex gap-2 mb-4">
+                <div className="flex flex-wrap gap-1.5 mt-2">
                   {response.matchedThemes.map(theme => (
-                    <span key={theme} className="text-xs bg-primary-900/50 text-primary-300 px-2 py-1 rounded-full">
+                    <span key={theme} className="text-[11px] bg-accent/10 text-accent border border-accent/20 px-2 py-0.5 rounded-full">
                       {theme}
                     </span>
                   ))}
                 </div>
               )}
             </div>
+            <button
+              onClick={() => setResponse(null)}
+              className="text-text-muted hover:text-text-secondary transition flex-shrink-0 mt-0.5"
+            >
+              <RotateCcw size={13} />
+            </button>
           </div>
 
           <div className="space-y-3">
@@ -117,12 +118,14 @@ export default function OracleView({ chart }: OracleViewProps) {
           </div>
 
           {response.suggestions.length > 0 && (
-            <div className="border-t border-border pt-4 mt-4">
-              <p className="text-xs font-semibold text-text-muted mb-2">💡 Sugerencias para el proceso:</p>
-              <ul className="space-y-1">
+            <div className="border-t border-border/40 pt-4">
+              <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-2">
+                Sugerencias para el proceso
+              </p>
+              <ul className="space-y-1.5">
                 {response.suggestions.map((s, i) => (
                   <li key={i} className="text-xs text-text-secondary flex items-start gap-2">
-                    <span className="text-primary-400 mt-0.5">•</span>
+                    <span className="text-accent mt-0.5 flex-shrink-0">·</span>
                     {s}
                   </li>
                 ))}
@@ -134,26 +137,29 @@ export default function OracleView({ chart }: OracleViewProps) {
 
       {/* History */}
       {history.length > 1 && (
-        <div className="bg-surface-card border border-border rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-text-muted mb-3">Consultas anteriores</h3>
-          <div className="space-y-3 max-h-60 overflow-y-auto">
+        <div className="bg-surface-card border border-border rounded-2xl p-5">
+          <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-wide mb-3">
+            Consultas anteriores
+          </h3>
+          <div className="space-y-2 max-h-52 overflow-y-auto">
             {history.slice(1).map((h, i) => (
               <button
                 key={i}
                 onClick={() => setResponse(h)}
-                className="w-full text-left p-3 bg-surface hover:bg-surface-lighter rounded-lg transition"
+                className="w-full text-left p-3 bg-surface hover:bg-surface-lighter rounded-xl transition"
               >
-                <p className="text-xs text-text-muted">"{h.query}"</p>
-                <p className="text-xs text-primary-400">{h.matchedThemes.join(', ') || 'consulta general'}</p>
+                <p className="text-xs text-text-secondary truncate">"{h.query}"</p>
+                <p className="text-[11px] text-accent/70 mt-0.5">
+                  {h.matchedThemes.join(', ') || 'consulta general'}
+                </p>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Disclaimer */}
-      <p className="text-[10px] text-text-muted text-center italic">
-        El oráculo funciona mediante asociaciones simbólicas locales. No utiliza inteligencia artificial externa.
+      <p className="text-[10px] text-text-muted text-center italic pb-2">
+        El oráculo funciona mediante asociaciones simbólicas locales. No utiliza IA externa.
       </p>
     </div>
   );

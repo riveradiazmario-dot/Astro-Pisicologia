@@ -15,6 +15,21 @@ import {
 } from './symbolic-data';
 
 // ============================================
+// HELPER: readable aspect labels for PDF compatibility
+// (Unicode astrological glyphs like ☌ □ △ don't render in Helvetica)
+// ============================================
+const ASPECT_ABBREV: Record<string, string> = {
+  conjunction: 'conj.',
+  sextile:     'sext.',
+  square:      'cuad.',
+  trine:       'tríg.',
+  opposition:  'opos.',
+};
+function aspLabel(a: { type: string }): string {
+  return ASPECT_ABBREV[a.type] ?? a.type.slice(0, 4) + '.';
+}
+
+// ============================================
 // TIPOS DE INTERPRETACIÓN
 // ============================================
 
@@ -191,13 +206,13 @@ function interpretEmotionalNeeds(chart: NatalChart): InterpretationSection {
     const flowing = moonAspects.filter(a => isFlowingAspect(a.type));
     if (tense.length > 0) {
       content.push(
-        `Aspectos de tensión de la Luna (${tense.map(a => `${a.symbol} ${a.planet1 === 'Luna' ? a.planet2 : a.planet1}`).join(', ')}): ` +
+        `Aspectos de tensión de la Luna (${tense.map(a => `${aspLabel(a)} ${a.planet1 === 'Luna' ? a.planet2 : a.planet1}`).join(', ')}): ` +
         `las necesidades emocionales pueden entrar en conflicto con otras áreas de la personalidad.`
       );
     }
     if (flowing.length > 0) {
       content.push(
-        `Aspectos fluidos de la Luna (${flowing.map(a => `${a.symbol} ${a.planet1 === 'Luna' ? a.planet2 : a.planet1}`).join(', ')}): ` +
+        `Aspectos fluidos de la Luna (${flowing.map(a => `${aspLabel(a)} ${a.planet1 === 'Luna' ? a.planet2 : a.planet1}`).join(', ')}): ` +
         `hay recursos naturales para satisfacer las necesidades emocionales con relativa facilidad.`
       );
     }
@@ -366,7 +381,7 @@ function interpretRelationalDynamics(chart: NatalChart): InterpretationSection {
   if (venusMarsAspects.length > 0) {
     const asp = venusMarsAspects[0];
     content.push(
-      `**Venus ${asp.symbol} Marte (orbe ${asp.orb}°)**: La tensión entre el afecto y el deseo ` +
+      `**Venus ${aspLabel(asp)} Marte (orbe ${asp.orb}°)**: La tensión entre el afecto y el deseo ` +
       `${isTenseAspect(asp.type) ? 'genera fricción, pero también intensidad creativa en las relaciones.' : 'fluye con relativa armonía, integrando amor y deseo.'}`
     );
   }
@@ -406,7 +421,7 @@ function interpretRepetitivePatterns(chart: NatalChart): InterpretationSection {
 
   const tenseAspects = chart.aspects.filter(a => isTenseAspect(a.type));
   if (tenseAspects.length > 0) {
-    const key = tenseAspects.slice(0, 3).map(a => `${a.planet1} ${a.symbol} ${a.planet2}`).join('; ');
+    const key = tenseAspects.slice(0, 3).map(a => `${a.planet1} ${aspLabel(a)} ${a.planet2}`).join('; ');
     content.push(
       `**Aspectos de tensión principales**: ${key}\n` +
       `Estas configuraciones representan tensiones internas que el consultante tiende a re-escenificar en distintas áreas de vida. ` +
@@ -418,7 +433,7 @@ function interpretRepetitivePatterns(chart: NatalChart): InterpretationSection {
     const moonSaturnAspects = findAspectsBetween(chart, 'Luna', 'Saturno');
     if (moonSaturnAspects.length > 0) {
       content.push(
-        `**Luna ${moonSaturnAspects[0].symbol} Saturno**: El patrón de restricción emocional puede llevar ` +
+        `**Luna ${aspLabel(moonSaturnAspects[0])} Saturno**: El patrón de restricción emocional puede llevar ` +
         `a repetir situaciones donde las necesidades afectivas no se satisfacen, ` +
         `reforzando una creencia de indignidad afectiva que merece ser cuestionada.`
       );
@@ -459,7 +474,7 @@ function interpretStrengths(chart: NatalChart): InterpretationSection {
   const flowingAspects = chart.aspects.filter(a => isFlowingAspect(a.type));
   if (flowingAspects.length > 0) {
     content.push(
-      `**Aspectos fluidos (recursos naturales)**: ${flowingAspects.slice(0, 4).map(a => `${a.planet1} ${a.symbol} ${a.planet2}`).join('; ')}\n` +
+      `**Aspectos fluidos (recursos naturales)**: ${flowingAspects.slice(0, 4).map(a => `${a.planet1} ${aspLabel(a)} ${a.planet2}`).join('; ')}\n` +
       `Estas configuraciones representan talentos naturales y flujos de energía que el consultante puede activar ` +
       `con relativa facilidad como recursos en su proceso de crecimiento.`
     );

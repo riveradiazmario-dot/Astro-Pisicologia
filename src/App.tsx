@@ -15,6 +15,7 @@ import ReportView from './components/ReportView';
 import ConsultantsList from './components/ConsultantsList';
 import OracleView from './components/OracleView';
 import ConfigView from './components/ConfigView';
+import WelcomeScreen from './components/WelcomeScreen';
 import { calculateNatalChart } from './astronomy/engine';
 import { generateFullInterpretation, type FullInterpretation } from './interpretation-engine/interpreter';
 import { saveConsultant, getTherapistConfig } from './storage/db';
@@ -22,6 +23,7 @@ import type { BirthData, NatalChart, Consultant, TherapistConfig } from './astro
 
 export default function App() {
   const [view, setView] = useState<View>('new');
+  const [showNewForm, setShowNewForm] = useState(false);
   const [chart, setChart] = useState<NatalChart | null>(null);
   const [interpretation, setInterpretation] = useState<FullInterpretation | null>(null);
   const [currentConsultant, setCurrentConsultant] = useState<Consultant | null>(null);
@@ -53,19 +55,14 @@ export default function App() {
     setError(null);
 
     try {
-      // Small delay to let the UI update
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      // Calculate natal chart
       const natalChart = calculateNatalChart(birthData, therapistConfig.orbDefault);
-
-      // Generate interpretation
       const fullInterp = generateFullInterpretation(natalChart);
 
       setChart(natalChart);
       setInterpretation(fullInterp);
 
-      // Save consultant
       const consultant: Consultant = {
         id: currentConsultant?.id,
         name: birthData.name,
@@ -79,8 +76,6 @@ export default function App() {
       const savedId = await saveConsultant(consultant);
       setCurrentConsultant({ ...consultant, id: savedId });
       setRefreshTrigger(prev => prev + 1);
-
-      // Navigate to report
       setView('report');
     } catch (err) {
       console.error('Error calculating chart:', err);
@@ -98,6 +93,7 @@ export default function App() {
       setInterpretation(generateFullInterpretation(consultant.chart));
       setView('report');
     } else {
+      setShowNewForm(true);
       setView('new');
     }
   }, []);
@@ -110,18 +106,35 @@ export default function App() {
       setCurrentConsultant(null);
       setChart(null);
       setInterpretation(null);
+      setShowNewForm(false); // Reset to welcome screen
     }
   }, []);
 
   const renderContent = () => {
     switch (view) {
       case 'new':
+        if (!showNewForm) {
+          return (
+            <WelcomeScreen
+              onNewChart={() => setShowNewForm(true)}
+              onOpenConsultants={() => setView('consultants')}
+              onConfig={() => setView('config')}
+              therapistName={therapistConfig.name || undefined}
+            />
+          );
+        }
         return (
           <div className="max-w-2xl mx-auto">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-text-primary">Nueva Carta Natal</h1>
+              <button
+                onClick={() => setShowNewForm(false)}
+                className="text-xs text-text-muted hover:text-text-secondary transition mb-3 flex items-center gap-1.5"
+              >
+                ← Inicio
+              </button>
+              <h1 className="text-xl font-semibold text-text-primary">Nueva Carta Natal</h1>
               <p className="text-sm text-text-muted mt-1">
-                Ingrese los datos de nacimiento del consultante para calcular su carta natal.
+                Datos de nacimiento del consultante para calcular su carta natal.
               </p>
             </div>
             <BirthDataForm
@@ -153,8 +166,8 @@ export default function App() {
             <div className="text-center py-20">
               <p className="text-text-muted text-lg mb-4">No hay carta natal calculada</p>
               <button
-                onClick={() => setView('new')}
-                className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition"
+                onClick={() => { setShowNewForm(true); setView('new'); }}
+                className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition text-sm"
               >
                 Crear nueva carta
               </button>
@@ -175,8 +188,8 @@ export default function App() {
             <div className="text-center py-20">
               <p className="text-text-muted text-lg mb-4">Primero necesitas calcular una carta natal</p>
               <button
-                onClick={() => setView('new')}
-                className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition"
+                onClick={() => { setShowNewForm(true); setView('new'); }}
+                className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition text-sm"
               >
                 Crear nueva carta
               </button>

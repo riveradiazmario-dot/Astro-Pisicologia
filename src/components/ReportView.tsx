@@ -30,31 +30,42 @@ export default function ReportView({ chart, interpretation, therapistConfig }: R
     }
   };
 
+  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: 'wheel',          label: 'Carta',          icon: <span className="text-base leading-none">☉</span> },
+    { id: 'chart',          label: 'Datos',          icon: <Table size={14} /> },
+    { id: 'interpretation', label: 'Interpretación', icon: <BookOpen size={14} /> },
+  ];
+
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-surface-card border border-border rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      {/* Header card */}
+      <div className="bg-surface-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-accent">
-            Informe: {chart.birthData.name}
+          <h2 className="text-base font-semibold text-text-primary">
+            {chart.birthData.name}
           </h2>
-          <p className="text-xs text-text-muted">
-            {chart.birthData.date} · {chart.birthData.time} · {chart.birthData.city}
-            {' · '}☉ {chart.planets[0]?.sign} · ☽ {chart.planets[1]?.sign} · ASC {chart.ascendantSign}
+          <p className="text-xs text-text-muted mt-0.5">
+            {chart.birthData.date} · {chart.birthData.time}
+            {chart.birthData.city && ` · ${chart.birthData.city}`}
+            {'  '}
+            <span className="text-accent/80">☉ {chart.planets[0]?.sign}</span>
+            {' · '}
+            <span className="text-accent/80">☽ {chart.planets[1]?.sign}</span>
+            {' · '}
+            <span className="text-accent/80">ASC {chart.ascendantSign}</span>
           </p>
         </div>
 
-        {/* Export controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* Quality toggle */}
-          <div className="flex items-center gap-1 bg-surface border border-border rounded-lg p-1 text-xs">
+          <div className="flex items-center bg-surface border border-border rounded-lg p-0.5 text-xs">
             {(['NORMAL', 'HIGH'] as ExportQuality[]).map((q) => (
               <button
                 key={q}
                 onClick={() => setQuality(q)}
                 className={`px-2.5 py-1 rounded-md font-medium transition ${
                   quality === q
-                    ? 'bg-primary-700 text-white'
+                    ? 'bg-surface-lighter text-text-primary'
                     : 'text-text-muted hover:text-text-primary'
                 }`}
               >
@@ -63,61 +74,38 @@ export default function ReportView({ chart, interpretation, therapistConfig }: R
             ))}
           </div>
 
-          {/* Export button */}
           <button
             onClick={handleExportPDF}
             disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 disabled:bg-surface-lighter disabled:text-text-muted text-white rounded-lg transition text-sm font-medium"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-accent hover:bg-primary-400 disabled:opacity-50 text-surface rounded-lg transition text-xs font-semibold"
           >
             {exporting ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                <span>Generando…</span>
-              </>
+              <><Loader2 size={13} className="animate-spin" /><span>Generando…</span></>
             ) : (
-              <>
-                <Download size={16} />
-                <span>Exportar PDF</span>
-              </>
+              <><Download size={13} /><span>PDF</span></>
             )}
           </button>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tab bar */}
       <div className="flex gap-1 bg-surface-card border border-border rounded-xl p-1">
-        <button
-          onClick={() => setActiveTab('wheel')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
-            activeTab === 'wheel'
-              ? 'bg-primary-700 text-white'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-lighter'
-          }`}
-        >
-          ☉ Carta
-        </button>
-        <button
-          onClick={() => setActiveTab('chart')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
-            activeTab === 'chart'
-              ? 'bg-primary-700 text-white'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-lighter'
-          }`}
-        >
-          <Table size={16} />
-          Datos
-        </button>
-        <button
-          onClick={() => setActiveTab('interpretation')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
-            activeTab === 'interpretation'
-              ? 'bg-primary-700 text-white'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-lighter'
-          }`}
-        >
-          <BookOpen size={16} />
-          Interpretación
-        </button>
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`
+              flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all
+              ${activeTab === tab.id
+                ? 'bg-surface-lighter text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-secondary'
+              }
+            `}
+          >
+            {tab.icon}
+            <span>{tab.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Content */}
